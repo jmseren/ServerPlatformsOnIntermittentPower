@@ -1,5 +1,7 @@
 package edu.pitt.cs.faas;
 
+import java.util.ArrayList;
+
 public class Simulator {
     private final int NUM_NODES = 10;
 

@@ -5,7 +5,7 @@ import java.io.*;
 
 public class SolarProfile {
 
-    private Queue<Trace> traces = new ArrayList<Trace>();
+    private Queue<Trace> traces = new LinkedList<Trace>();
 
     private int time = 0;
 
