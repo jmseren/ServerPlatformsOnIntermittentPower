@@ -1,4 +1,4 @@
-package loadbalancer;
+package edu.pitt.cs.faas.loadbalancer;
 
 import java.util.ArrayList;
 

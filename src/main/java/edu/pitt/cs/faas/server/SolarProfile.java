@@ -1,4 +1,4 @@
-package edu.pitt.cs.faas;
+package edu.pitt.cs.faas.server;
 
 import java.util.*;
 import java.io.*;
@@ -10,6 +10,8 @@ public class SolarProfile {
     private int time = 0;
 
     private int granularity = 10 * 60; 
+
+    private float averagePower;
     
     public SolarProfile(String fileName) {
         readFromCSV(fileName);
@@ -44,10 +46,15 @@ public class SolarProfile {
                 String[] lineSplit = line.split(",");
 
                 int period = 10;
-                int power = Integer.parseInt(lineSplit[4]);
+                float power = Float.parseFloat(lineSplit[6]);
+
+                averagePower += power;
 
                 traces.add(new Trace(period, power));
             }
+
+            averagePower /= traces.size();
+
         } catch (FileNotFoundException e) {
             System.out.println("File not found: " + fileName);
         }
@@ -66,7 +73,7 @@ public class SolarProfile {
         return output;
     }
 
-    public int getPower(){
+    public float getPower(){
         if(traces.size() == 0){
             return 0;
         }
@@ -85,5 +92,9 @@ public class SolarProfile {
 
     public int getGranularity(){
         return granularity;
+    }
+
+    public float getAveragePower(){
+        return averagePower;
     }
 }

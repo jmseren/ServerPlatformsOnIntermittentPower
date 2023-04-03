@@ -2,18 +2,28 @@ package edu.pitt.cs.faas.server;
 
 import java.util.*;
 
-import edu.pitt.cs.faas.battery.Battery;
+import edu.pitt.cs.faas.battery.*;
 import edu.pitt.cs.faas.workload.Workload;
 
 public class DataCenter {
+
+    private boolean online = true;
+
+    private final int MAX_HISTORY = 10;
+    private final int MAX_CONCURRENT_WORKLOADS = 1;
+    
     private SolarProfile solarProfile;
     private int time;
     private Queue<Workload> queue = new LinkedList<Workload>();
-
-    private final int MAX_CONCURRENT_WORKLOADS = 1;
-
     private Workload[] working = new Workload[MAX_CONCURRENT_WORKLOADS];
+    private int[] workingTime = new int[MAX_CONCURRENT_WORKLOADS];
+    private boolean[] cold = new boolean[MAX_CONCURRENT_WORKLOADS];
+
+    private float availablePower = 0; // Power in Watt-Sec available at every time step
+
+
     private LinkedList<Workload> history = new LinkedList<Workload>();
+
 
 
 
@@ -28,12 +38,18 @@ public class DataCenter {
         batt = new Battery(1000);
     }
 
-    public int getPower() {
+    public float getPower() {
         return batt.getLevel();
     }
 
     public int invoke(Workload w){
-        queue.add(w);
+        int slot = free();
+        if(slot == -1){
+            queue.add(w);
+        }else{
+            working[slot] = w;
+        }
+
         return 0;
     }
 
@@ -41,19 +57,105 @@ public class DataCenter {
         return time;
     }
 
+
+    private void evict(int i){
+        if(working[i] == null) return;
+        history.add(working[i]);
+        working[i] = null;
+        workingTime[i] = 0;
+    }
+
+    private boolean isCold(Workload w){
+        return history.contains(w);
+    }
+
+    private void add(Workload w, int slot){
+        // Add a workload to the current working set
+        working[slot] = w;
+        workingTime[slot] = 0;
+        cold[slot] = isCold(w);
+
+        // Update the history
+        if(!isCold(w)){
+            history.remove(w);
+        }
+        history.addFirst(w);
+        if(history.size() > MAX_HISTORY){
+            history.removeLast();
+        }
+        
+        
+    }
+
     public void timeStep(){
         time++;
+        // Update the available power
+        if(time % solarProfile.getGranularity() == 0){
+            availablePower = solarProfile.getPower();
+        }
+
+        // Update the battery
+        float tempEnergy = availablePower;
+        for(Workload w : working){
+            if(w != null){
+                tempEnergy -= w.getPower();
+            }
+        }
+        
+        try{
+            batt.charge(tempEnergy);
+        }catch(Exception e){
+            System.out.println("Battery error: " + e);
+            online = false;
+        }
+
+        // Work on the workloads
+        for(int i = 0; i < working.length; i++){
+            if(working[i] == null) continue;
+            workingTime[i]++;
+            if(working[i].work(workingTime[i], cold[i])){
+                evict(i);
+            }
+        }
+
+        // Add any waiting workloads
+        do {
+            int slot = free();
+            if(slot == -1) break;
+            if(queue.isEmpty()) break;
+            add(queue.remove(), slot);
+        } while(true);
+
         
     }
 
 
-    public float getPowerDraw(){
-        float power = 0;
+    public float getEnergy(){ 
+        // A rough estimate of the energy in Watt-Sec that the data center is drawing
+        float energy = 0;
         for(Workload w : working){
             if(w != null){
-                power += w.getPower();
+                energy += w.getPower();
             }
         }
-        return power;
+        return energy;
+    }
+
+    private int free(){
+        // Find the first free slot in the working array
+        for(int i = 0; i < working.length; i++){
+            if(working[i] != null){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public String toString(){
+        return "DataCenter: " + solarProfile.getAveragePower();
+    }
+
+    public boolean isOnline(){
+        return online;
     }
 }
