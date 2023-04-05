@@ -8,9 +8,9 @@ import edu.pitt.cs.faas.workload.Workload;
 public class LeanLoadBalancer implements LoadBalancer { 
     // The current implementation OpenWhisk uses to load balance workloads
     
-    public void invoke(ArrayList<DataCenter> nodes, Workload w){
+    public DataCenter balance(ArrayList<DataCenter> nodes, Workload w){
         int numNodes = nodes.size();
-        nodes.get(w.getHash() % numNodes).invoke(w);
+        return nodes.get(w.getHash() % numNodes);
     }
     
 }

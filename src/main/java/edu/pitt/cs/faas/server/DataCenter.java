@@ -35,7 +35,7 @@ public class DataCenter {
         this.solarProfile = solarProfile;
         this.time = 0;
 
-        batt = new Battery(1000);
+        batt = new Battery(542500);
     }
 
     public float getPower() {
@@ -87,11 +87,19 @@ public class DataCenter {
         
     }
 
-    public void timeStep(){
+    public void tick(){
         time++;
         // Update the available power
         if(time % solarProfile.getGranularity() == 0){
             availablePower = solarProfile.getPower();
+        }
+        if(!online){
+            try{
+                batt.charge(availablePower);
+                if(batt.getLevel() > 100) online = true;                
+            }catch(Exception e){
+            }
+            return;
         }
 
         // Update the battery
@@ -144,18 +152,18 @@ public class DataCenter {
     private int free(){
         // Find the first free slot in the working array
         for(int i = 0; i < working.length; i++){
-            if(working[i] != null){
+            if(working[i] == null){
                 return i;
             }
         }
         return -1;
     }
 
-    public String toString(){
-        return "DataCenter: " + solarProfile.getAveragePower();
-    }
-
     public boolean isOnline(){
         return online;
+    }
+
+    public String toString(){
+        return "DataCenter: Avail.Power: " + availablePower + "ws Battery Level:" + batt.getLevel() + "ws Queue Size: " + queue.size();
     }
 }

@@ -5,6 +5,8 @@ import java.io.*;
 
 public class SolarProfile {
 
+    private static final int PANEL_WATTAGE = 1;
+
     private Queue<Trace> traces = new LinkedList<Trace>();
 
     private int time = 0;
@@ -87,7 +89,7 @@ public class SolarProfile {
 
         time++;
 
-        return trace.power;
+        return (trace.power * PANEL_WATTAGE);
     }
 
     public int getGranularity(){
