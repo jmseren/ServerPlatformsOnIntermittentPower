@@ -21,6 +21,8 @@ public class DataCenter {
 
     private float availablePower = 0; // Power in Watt-Sec available at every time step
 
+    private static int count = 0;
+    private int id = count++;
 
     private LinkedList<Workload> history = new LinkedList<Workload>();
 
@@ -35,7 +37,7 @@ public class DataCenter {
         this.solarProfile = solarProfile;
         this.time = 0;
 
-        batt = new Battery(542500);
+        batt = new Battery(20000);
     }
 
     public float getPower() {
@@ -96,7 +98,10 @@ public class DataCenter {
         if(!online){
             try{
                 batt.charge(availablePower);
-                if(batt.getLevel() > 100) online = true;                
+                if(batt.getLevel() > batt.getCapacity() * .10){
+                    online = true;
+                    System.out.println("[BATTERY] Server " + id + " is now online");
+                }     
             }catch(Exception e){
             }
             return;
@@ -113,7 +118,8 @@ public class DataCenter {
         try{
             batt.charge(tempEnergy);
         }catch(Exception e){
-            System.out.println("Battery error: " + e);
+            System.out.println("[BATTERY] Server " + id + " is now offline");
+            // Give all the workloads back to the controller
             online = false;
         }
 
@@ -122,6 +128,7 @@ public class DataCenter {
             if(working[i] == null) continue;
             workingTime[i]++;
             if(working[i].work(workingTime[i], cold[i])){
+                System.out.println("[COMPLETED] " + working[i] + " on Server " + this.id);
                 evict(i);
             }
         }
@@ -150,6 +157,7 @@ public class DataCenter {
     }
 
     private int free(){
+    
         // Find the first free slot in the working array
         for(int i = 0; i < working.length; i++){
             if(working[i] == null){
@@ -164,6 +172,6 @@ public class DataCenter {
     }
 
     public String toString(){
-        return "DataCenter: Avail.Power: " + availablePower + "ws Battery Level:" + batt.getLevel() + "ws Queue Size: " + queue.size();
+        return "[DataCenter " + id + ", " + ((batt.getLevel() / batt.getCapacity()) * 100) + "%]";
     }
 }

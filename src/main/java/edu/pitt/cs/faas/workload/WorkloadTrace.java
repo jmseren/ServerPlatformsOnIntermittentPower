@@ -18,7 +18,7 @@ public class WorkloadTrace {
     }
 
     public void appendTrace(String traceLine){
-        traceLine = traceLine.split(",", 5)[4]; // Remove the first 4 columns
+        traceLine = traceLine.split(",", 2)[1]; // Remove the first column
         String[] traceStr = traceLine.split(",");
         for (String t : traceStr) {
             trace.add(Integer.parseInt(t));

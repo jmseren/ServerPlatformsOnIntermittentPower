@@ -7,7 +7,7 @@ public class Battery {
 
     public Battery(int batteryCapacity){
         this.batteryCapacity = batteryCapacity;
-        this.batteryLevel = batteryCapacity;
+        this.batteryLevel = 0;
     }
 
 

@@ -10,18 +10,22 @@ import edu.pitt.cs.faas.workload.*;
 public class Simulator {
     private final int TIME_STEP = 1; // Time step in seconds
     private final int SIMULATION_TIME = 86400; // Simulation time in seconds 
-    private final int NUM_WORKLOADS = 500;
+    private final int NUM_WORKLOADS = 50;
     private final int NUM_NODES = 9;
 
     private ArrayList<DataCenter> nodes = new ArrayList<DataCenter>();
     private ArrayList<Workload> workloads = new ArrayList<Workload>();
 
+    private Queue<Workload> queue = new LinkedList<Workload>();
+    
     private int time = 0;
-
+    
     private LoadBalancer lb;
+    private ArrayList<Policy> policies = new ArrayList<Policy>();
 
     public Simulator(LoadBalancer lb){
         this.lb = lb;
+        policies.add(new NoServerPolicy());
 
         // Get list of solar profiles in data directory
         // Create a node for each solar profile
@@ -37,7 +41,7 @@ public class Simulator {
         }
 
         try {
-            WorkloadFactory.setWorkloadSource(new Scanner(new File("workloads/invocations_per_function_md.anon.d01.csv")));
+            WorkloadFactory.setWorkloadSource(new Scanner(new File("workloads/trimmed_set.csv")));
         }catch(FileNotFoundException e){
             System.out.println(e.getMessage());
         }
@@ -49,7 +53,7 @@ public class Simulator {
     }
 
     public static void main(String[] args){
-        Simulator sim = new Simulator(new GreedyBalancer());
+        Simulator sim = new Simulator(new LeanLoadBalancer());
         sim.run();
     }
 
@@ -64,18 +68,44 @@ public class Simulator {
         return availableNodes;
     }
 
+    public boolean sendWorkload(Workload w){
+        for(Policy p : policies){
+            if(p.defer(w, availableNodes())){
+                System.out.println("[FAILED] " + w + " deferred by policy");
+                return false;
+            }
+        }
+
+        DataCenter dc = lb.balance(availableNodes(), w);
+        if(dc != null){
+            dc.invoke(w);
+            System.out.println("[SENT] " + w + " to " + dc);
+            return true;
+        }
+        
+        System.out.println("[FAILED] Catastrophic failure, no nodes available after policy check");
+        return false;
+    }
+
     public void run(){
         while(time < SIMULATION_TIME){
+            System.out.println("[TIME] " + time);
+            ArrayList<Workload> toRemove = new ArrayList<Workload>();
+            for(Workload w : queue){
+                if(sendWorkload(w)){
+                    toRemove.add(w);
+                } 
+            }
+            for(Workload w : toRemove){
+                queue.remove(w);
+            }
+
             for (Workload w : workloads) {
                 if (!w.shouldExecute(time))
                     continue;
-
-                DataCenter dc = lb.balance(availableNodes(), w);
-
-                dc.invoke(w);
-
-                System.out.println("Time: " + time + "\t " + w + "\t" + dc);
-
+                if(!sendWorkload(w)){
+                    queue.add(w);
+                }
             }
             for(DataCenter dc : nodes){
                 dc.tick();

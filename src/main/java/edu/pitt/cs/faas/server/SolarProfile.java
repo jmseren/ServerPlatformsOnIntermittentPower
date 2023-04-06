@@ -5,13 +5,16 @@ import java.io.*;
 
 public class SolarProfile {
 
-    private static final int PANEL_WATTAGE = 1;
+    // Watt-seconds required for a 6.5 W Pi to run for 24 hours
+    // 561600 = 6.5 * 24 * 60 * 60
+    // 
+    private static final float PANEL_WATTAGE = 500f;
 
     private Queue<Trace> traces = new LinkedList<Trace>();
 
     private int time = 0;
 
-    private int granularity = 10 * 60; 
+    private int granularity = 10 * 60;
 
     private float averagePower;
     
@@ -63,29 +66,14 @@ public class SolarProfile {
     }
 
 
-    public String toString(){
-        String output = "";
-        int time = 0;
-
-        for(Trace trace : traces){
-            output += "Time: " + time + " Period: " + trace.period + " Power: " + trace.power + "\n";
-            time += trace.period;
-        }
-
-        return output;
-    }
-
     public float getPower(){
         if(traces.size() == 0){
             return 0;
         }
 
-        Trace trace = traces.peek();
+        Queue<Trace> temp = traces;
 
-        if(time == trace.period){
-            traces.remove();
-            time = 0;
-        }
+        Trace trace = traces.poll();
 
         time++;
 

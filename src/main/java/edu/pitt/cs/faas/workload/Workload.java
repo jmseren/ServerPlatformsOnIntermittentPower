@@ -43,9 +43,10 @@ public class Workload {
 
     public boolean shouldExecute(int time) {
         int invocationsPerMinute = trace.getInvocations(time);
-        
-
-        return Math.random() < invocationsPerMinute / 60.0; // TODO: Fix this
+        if(invocationsPerMinute > 60){
+            return true;
+        }
+        return invocationsPerMinute > 0 && (time % (60 / (invocationsPerMinute)) == 0);
 
     }
 
