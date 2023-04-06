@@ -1,5 +1,6 @@
 package edu.pitt.cs.faas.server;
 
+import java.io.FileWriter;
 import java.util.*;
 
 import edu.pitt.cs.faas.battery.*;
@@ -27,7 +28,7 @@ public class DataCenter {
     private LinkedList<Workload> history = new LinkedList<Workload>();
 
 
-
+    private FileWriter writer;
 
     private Battery batt;
     
@@ -38,6 +39,15 @@ public class DataCenter {
         this.time = 0;
 
         batt = new Battery(20000);
+
+
+        try {
+            writer = new FileWriter("./logs/server" + id + ".csv");
+            writer.write("time,availablePower,batteryLevel");
+            writer.write("\n");
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
     public float getPower() {
@@ -141,7 +151,13 @@ public class DataCenter {
             add(queue.remove(), slot);
         } while(true);
 
-        
+        try {
+            writer.write(time + "," + availablePower + "," + batt.getLevel());
+            writer.write("\n");
+            writer.flush();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 
 

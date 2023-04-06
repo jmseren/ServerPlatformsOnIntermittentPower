@@ -92,6 +92,10 @@ public class Simulator {
             System.out.println("[TIME] " + time);
             ArrayList<Workload> toRemove = new ArrayList<Workload>();
             for(Workload w : queue){
+                if(availableNodes().isEmpty()){
+                    System.out.println("[FAILED] No nodes available to dequeue workload");
+                    break;
+                }
                 if(sendWorkload(w)){
                     toRemove.add(w);
                 } 
